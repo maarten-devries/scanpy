@@ -1,5 +1,5 @@
 from collections.abc import MutableMapping
-from typing import Iterable, Union, Optional
+from typing import Iterable, Union, Optional, Literal
 
 import pandas as pd
 import numpy as np
@@ -187,15 +187,22 @@ class Ingest:
     """
 
     def _init_umap(self, adata):
-        import umap as u
+        if self.rapids:
+            from cuml import UMAP
+            self._umap = UMAP(
+                metric=self._metric,
+                random_state=adata.uns['umap']['params'].get('random_state', 0),
+            )
+        else:
+            import umap as u
 
-        if not self._use_pynndescent:
-            u.umap_._HAVE_PYNNDESCENT = False
+            if not self._use_pynndescent:
+                u.umap_._HAVE_PYNNDESCENT = False
 
-        self._umap = u.UMAP(
-            metric=self._metric,
-            random_state=adata.uns['umap']['params'].get('random_state', 0),
-        )
+            self._umap = u.UMAP(
+                metric=self._metric,
+                random_state=adata.uns['umap']['params'].get('random_state', 0),
+            )
 
         self._umap._initial_alpha = self._umap.learning_rate
         self._umap._raw_data = self._rep
@@ -363,8 +370,9 @@ class Ingest:
         else:
             self._pca_basis = adata.varm['PCs']
 
-    def __init__(self, adata, neighbors_key=None):
+    def __init__(self, adata, neighbors_key=None, method=Optional[Literal['rapids']]):
         # assume rep is X if all initializations fail to identify it
+        self.rapids = method == 'rapids'
         self._rep = adata.X
         self._use_rep = 'X'
 
