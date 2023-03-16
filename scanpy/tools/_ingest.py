@@ -17,7 +17,7 @@ from .._compat import pkg_version
 ANNDATA_MIN_VERSION = version.parse("0.7rc1")
 
 def print_red(skk):
-    print('\033[91m {}\033[00m'.format(skk))   
+    print('\033[91m {}\033[00m'.format(skk))
 
 def ingest(
     adata: AnnData,
@@ -193,10 +193,16 @@ class Ingest:
         if self.rapids:
             print_red('using RAPIDS')
             from cuml import UMAP
-            self._umap = UMAP(
-                metric=self._metric,
-                random_state=adata.uns['umap']['params'].get('random_state', 0),
-            )
+            if pkg_version('cuml') < version.parse('22.10.0'):
+                # only supports euclidean metric
+                self._umap = UMAP(
+                    random_state=adata.uns['umap']['params'].get('random_state', 0),
+                )
+            else:
+                self._umap = UMAP(
+                    metric=self._metric, # this is only added after cuml 22.10
+                    random_state=adata.uns['umap']['params'].get('random_state', 0),
+                )
         else:
             import umap as u
 
