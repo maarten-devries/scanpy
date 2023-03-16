@@ -16,6 +16,8 @@ from .._compat import pkg_version
 
 ANNDATA_MIN_VERSION = version.parse("0.7rc1")
 
+def print_red(skk):
+    print('\033[91m {}\033[00m'.format(skk))   
 
 def ingest(
     adata: AnnData,
@@ -187,7 +189,9 @@ class Ingest:
     """
 
     def _init_umap(self, adata):
+        print_red('_init_umap...')
         if self.rapids:
+            print_red('using RAPIDS')
             from cuml import UMAP
             self._umap = UMAP(
                 metric=self._metric,
@@ -231,6 +235,7 @@ class Ingest:
 
             self._umap._search_graph = self._search_graph
         else:
+            print_red('Using PynnDescent')
             self._umap._knn_search_index = self._nnd_idx
 
         self._umap._a = adata.uns['umap']['params']['a']
@@ -239,6 +244,7 @@ class Ingest:
         self._umap._input_hash = None
 
     def _init_dist_search(self, dist_args):
+        print_red('_init_dist_search...')
         from functools import partial
         from umap.nndescent import initialise_search
         from umap.distances import named_distances
@@ -286,6 +292,7 @@ class Ingest:
         self._search = _search
 
     def _init_pynndescent(self, distances):
+        print_red('_init_pynndescent...')
         from pynndescent import NNDescent
 
         self._use_pynndescent = True
@@ -318,6 +325,7 @@ class Ingest:
         )
 
     def _init_neighbors(self, adata, neighbors_key):
+        print_red('_init_neighbors...')
         neighbors = NeighborsView(adata, neighbors_key)
 
         self._n_neighbors = neighbors['params']['n_neighbors']
@@ -355,10 +363,12 @@ class Ingest:
             else:
                 self._rp_forest = None
         else:
+            print_red('using pynndescent in neighbors...')
             self._neigh_random_state = neighbors['params'].get('random_state', 0)
             self._init_pynndescent(neighbors['distances'])
 
     def _init_pca(self, adata):
+        print_red('_init_pca...')
         self._pca_centered = adata.uns['pca']['params']['zero_center']
         self._pca_use_hvg = adata.uns['pca']['params']['use_highly_variable']
 
@@ -372,6 +382,7 @@ class Ingest:
 
     def __init__(self, adata, neighbors_key=None, method=Optional[Literal['rapids']]):
         # assume rep is X if all initializations fail to identify it
+        print_red('_init_...')
         self.rapids = method == 'rapids'
         self._rep = adata.X
         self._use_rep = 'X'
@@ -409,6 +420,7 @@ class Ingest:
         self._distances = None
 
     def _pca(self, n_pcs=None):
+        print_red('_pca...')
         X = self._adata_new.X
         X = X.toarray() if issparse(X) else X.copy()
         if self._pca_use_hvg:
@@ -419,6 +431,7 @@ class Ingest:
         return X_pca
 
     def _same_rep(self):
+        print_red('_same_rep...')
         adata = self._adata_new
         if self._n_pcs is not None:
             return self._pca(self._n_pcs)
@@ -441,6 +454,7 @@ class Ingest:
         `adata` refers to the :class:`~anndata.AnnData` object
         that is passed during the initialization of an Ingest instance.
         """
+        print_red('fit...')
         ref_var_names = self._adata_ref.var_names.str.upper()
         new_var_names = adata_new.var_names.str.upper()
 
@@ -463,6 +477,7 @@ class Ingest:
         This function calculates `k` neighbors in `adata` for
         each observation of `adata_new`.
         """
+        print_red('NEIGHBORS...')
         from umap.umap_ import INT32_MAX, INT32_MIN
 
         random_state = check_random_state(random_state)
@@ -493,6 +508,7 @@ class Ingest:
             self._indices, self._distances = indices[:, :k], dists[:, :k]
 
     def _umap_transform(self):
+        print_red('UMAP TRANSFORM...')
         return self._umap.transform(self._obsm['rep'])
 
     def map_embedding(self, method):
@@ -503,6 +519,7 @@ class Ingest:
         for `adata_new` from existing embeddings in `adata`.
         `method` can be 'umap' or 'pca'.
         """
+        print_red('MAP EMBEDDING...')
         if method == 'umap':
             self._obsm['X_umap'] = self._umap_transform()
         elif method == 'pca':
@@ -513,6 +530,7 @@ class Ingest:
             )
 
     def _knn_classify(self, labels):
+        print_red('KNN CLASSIFY...')
         cat_array = self._adata_ref.obs[labels].astype(
             'category'
         )  # ensure it's categorical
@@ -527,6 +545,7 @@ class Ingest:
         from existing labels in `adata.obs`.
         `method` can be only 'knn'.
         """
+        print_red('MAP LABELS...')
         if method == 'knn':
             self._obs[labels] = self._knn_classify(labels)
         else:
