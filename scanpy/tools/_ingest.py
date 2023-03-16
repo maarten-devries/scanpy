@@ -370,7 +370,7 @@ class Ingest:
         else:
             self._pca_basis = adata.varm['PCs']
 
-    def __init__(self,  method=Optional[Literal['rapids']], adata, neighbors_key=None):
+    def __init__(self, adata, neighbors_key=None, method=Optional[Literal['rapids']]):
         # assume rep is X if all initializations fail to identify it
         self.rapids = method == 'rapids'
         self._rep = adata.X
