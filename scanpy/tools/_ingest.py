@@ -516,7 +516,10 @@ class Ingest:
 
     def _umap_transform(self):
         print_red('UMAP TRANSFORM...')
-        return self._umap.transform(self._obsm['rep'])
+        if self.rapids:
+            return self._umap.fit_transform(self._obsm['rep']) # cuml
+        else:
+            return self._umap.transform(self._obsm['rep'])
 
     def map_embedding(self, method):
         """\
