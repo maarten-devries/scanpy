@@ -243,7 +243,6 @@ class Ingest:
 
             self._umap._search_graph = self._search_graph
         else:
-            print_red('Using PynnDescent')
             self._umap._knn_search_index = self._nnd_idx
 
         self._umap._a = adata.uns['umap']['params']['a']
