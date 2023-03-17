@@ -203,6 +203,9 @@ class Ingest:
                     metric=self._metric, # this is only added after cuml 22.10
                     random_state=adata.uns['umap']['params'].get('random_state', 0),
                 )
+                self._umap._initial_alpha = self._umap.learning_rate
+                self._umap._raw_data = self._rep
+                self._umap.knn_dists = None
         else:
             import umap as u
 
@@ -214,11 +217,10 @@ class Ingest:
                 random_state=adata.uns['umap']['params'].get('random_state', 0),
             )
 
-        self._umap._initial_alpha = self._umap.learning_rate
-        self._umap._raw_data = self._rep
-        self._umap.knn_dists = None
-
-        self._umap._validate_parameters()
+            self._umap._initial_alpha = self._umap.learning_rate
+            self._umap._raw_data = self._rep
+            self._umap.knn_dists = None
+            self._umap._validate_parameters() # this step not needed with RAPIDS
 
         self._umap.embedding_ = adata.obsm['X_umap']
         self._umap._sparse_data = issparse(self._rep)
